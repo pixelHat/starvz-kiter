@@ -1,0 +1,68 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%labels
+    Maintainer apfumaco@inf.ufrgs.br
+    Version 1.0
+    Description StarPU and StarVZ Environment
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH=/usr/local/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+
+    # 1. Install system dependencies
+    apt-get update && apt-get install -y \
+        build-essential \
+        gcc \
+        gfortran \
+        libtool-bin \
+        automake \
+        autoconf \
+        pkg-config \
+        git \
+        wget \
+        cmake \
+        libhwloc-dev \
+        libfxt-dev \
+        r-base-dev \
+        libcurl4-openssl-dev \
+        libssl-dev \
+        libxml2-dev \
+        libxml2 \
+        git-lfs \
+        pajeng \
+        recutils
+
+    # 2. Compile and install StarPU (with FxT for execution tracing)
+    cd /tmp
+    rm -rf /tmp/starpu
+    git clone --depth 1 https://github.com/starpu-runtime/starpu.git
+    cd starpu
+    git fetch --tags
+    git checkout starpu-1.4.7
+    ./autogen.sh
+    ./configure --with-fxt --disable-cuda --disable-opencl
+    make -j$(nproc)
+    make install
+    ldconfig
+
+    # 3. Install StarVZ R package and dependencies
+    R -e "install.packages('tidyverse', repos='https://cloud.r-project.org/')"
+    R -e "install.packages('Rcpp', repos='https://cloud.r-project.org/')"
+    R -e "Sys.setenv(NOT_CRAN='true'); install.packages('arrow', repos='https://cloud.r-project.org/')"
+    R -e "install.packages('remotes', repos='https://cloud.r-project.org/')"
+    R -e "remotes::install_github('schnorr/starvz')"
+
+    # 4. Cleanup
+    rm -rf /tmp/starpu
+    apt-get clean
+
+%runscript
+    echo "StarPU and StarVZ environment ready."
+    exec "$@"
