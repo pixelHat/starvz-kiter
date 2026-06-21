@@ -21,7 +21,7 @@ This module provides tools for visualizing execution traces using **Kiter** plot
 If you are using the provided container definition, you can build the image with:
 
 ```bash
-sudo singularity build starvz.sif starvz-starpu.def
+apptainer build starvz.sif starvz-starpu.def
 ```
 
 ## Usage
